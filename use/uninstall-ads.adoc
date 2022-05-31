@@ -1,0 +1,254 @@
+---
+sidebar: sidebar 
+permalink: use/uninstall-ads.html 
+keywords: astra, astra data store, astra datastore, uninstall 
+summary: Astra データストアをアンインストールするには、ワークロード、バインド、ボリューム、エクスポートポリシー、クラスタ、 ライセンス、導入環境、ネームスペース： 
+---
+= Astra データストアプレビューを自動スクリプトでアンインストールします
+:hardbreaks:
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/use/
+
+
+Astra データストアのプレビューとコントロールプレーンをアンインストールするには、ワークロード、バインド、ボリューム、エクスポートポリシー、 Astra データストアクラスタ、ライセンス、導入環境、および Astra データストアのプレビューネームスペースを削除します。
+
+または、を使用することもできます link:../use/uninstall-ads-manual.html["スクリプトを使用せずに Astra データストアプレビューをアンインストールする"]。
+
+.必要なもの
+* root 管理権限
+
+
+Astra Data Store プレビューアンインストールプロセスでは、次の手順が簡単に実行できます。
+
+* <<Remove existing workloads and bindings>>
+* <<Uninstall Astra Data Store cluster>>
+* <<Validate the removal of the astrads-system namespace>>
+* <<Ensure containers are not running on worker nodes>>
+* <<Delete OpenShift Container Platform resources>>
+* <<Troubleshoot the Astra Data Store preview uninstall process>>
+
+
+
+
+== 既存のワークロードとバインドを削除します
+
+Astra データストアプレビューをアンインストールする前に、次の項目を削除する必要があります
+
+* ストレージバックエンドとして Astra データストアプレビューを使用するすべてのアプリケーションワークロード
+* バックエンドとして Astra データストアプレビューを使用する Trident バインディング
+
+
+これにより、 Kubernetes 環境をクリーンな状態のまま維持できます。これは、を再インストールする場合に重要です。
+
+
+
+== Astra データストアクラスタをアンインストールします
+
+Astra Data Store プレビューをアンインストールするには、ネットアップサポートサイトからダウンロードした Astra Data Store tar ファイルで「 uninstall.sh 」スクリプトを使用します。
+
+. 'マニフェスト ' ディレクトリの 'uninstall.sh' を探します
+. 次の「 sed 」コマンドを実行します。
++
+[listing]
+----
+sed -i -e 's~netappsdsoperator.yaml~astradsoperator.yaml~' uninstall.sh
+----
+. 次のスクリプトを実行して、アンインストールする項目を指定します。
++
+[listing]
+----
+./uninstall.sh
+
+You must run this script with an argument specifying what should be uninstalled
+To uninstall the ADS cluster run ./uninstall.sh cluster
+To uninstall everything run ./uninstall all
+----
+. クラスタのみをアンインストールする場合は、「 uninstall.sh <cluster>` 」と入力します
++
+それ以外の場合は、すべてをアンインストールするには、「 uninstall.sh 」と入力します
+
++
+
+NOTE: ほとんどの場合、すべてをアンインストールします。その後クラスタを再導入する場合は、クラスタだけをアンインストールすることもできます。
+
+. プロンプトで続行することを確認し、「 erasedata 」と入力します
++
+対応：
+
++
+[listing]
+----
+./uninstall.sh all
+
+Enter 'erasedata' to confirm you want proceed with the uninstall: erasedata
++----------------------------------------------------+
+| Wed Feb  2 10:14:01 EST 2022                       |
+| ADS cluster uninstall started                      |
++----------------------------------------------------+
+Deleting astradsvolumes
+Deleted astradsvolumes
+Deleting astradsexportpolicies
+Deleted astradsexportpolicies
+Deleting astradsvolumesnapshots
+Deleted astradsvolumesnapshots
+Deleting astradsclusters
+Deleting astradsclusters
+Deleting astradslicenses
+Deleted astradslicenses
+
++----------------------------------------------------+
+| Wed Feb  2 10:15:18 EST 2022                       |
+| ADS cluster uninstall done                         |
++----------------------------------------------------+
+
++----------------------------------------------------+
+| Wed Feb  2 10:15:18 EST 2022                       |
+| ADS system uninstall started                       |
++----------------------------------------------------+
+Removing astradsversion
+astradsversion.astrads.netapp.io "astradsversion" deleted
+Removed astradsversion
+Removing daemonsets
+daemonset.apps "astrads-ds-nodeinfo-astradsversion" deleted
+Removed daemonsets
+Removing deployments
+deployment.apps "astrads-cluster-controller" deleted
+deployment.apps "astrads-license-controller" deleted
+deployment.apps "astrads-operator" deleted
+Removed deployments
+Removing all other AstraDS resources
+namespace "astrads-system" deleted
+customresourcedefinition.apiextensions.k8s.io "astradsautosupports.astrads.netapp.io" deleted
+customresourcedefinition.apiextensions.k8s.io "astradscloudsnapshots.astrads.netapp.io" deleted
+customresourcedefinition.apiextensions.k8s.io "astradsclusters.astrads.netapp.io" deleted
+customresourcedefinition.apiextensions.k8s.io "astradsexportpolicies.astrads.netapp.io" deleted
+customresourcedefinition.apiextensions.k8s.io "astradsfaileddrives.astrads.netapp.io" deleted
+customresourcedefinition.apiextensions.k8s.io "astradslicenses.astrads.netapp.io" deleted
+customresourcedefinition.apiextensions.k8s.io "astradsnfsoptions.astrads.netapp.io" deleted
+customresourcedefinition.apiextensions.k8s.io "astradsnodeinfoes.astrads.netapp.io" deleted
+customresourcedefinition.apiextensions.k8s.io "astradsnodemanagements.astrads.netapp.io" deleted
+customresourcedefinition.apiextensions.k8s.io "astradsqospolicies.astrads.netapp.io" deleted
+customresourcedefinition.apiextensions.k8s.io "astradsversions.astrads.netapp.io" deleted
+customresourcedefinition.apiextensions.k8s.io "astradsvolumefiles.astrads.netapp.io" deleted
+customresourcedefinition.apiextensions.k8s.io "astradsvolumes.astrads.netapp.io" deleted
+customresourcedefinition.apiextensions.k8s.io "astradsvolumesnapshots.astrads.netapp.io" deleted
+role.rbac.authorization.k8s.io "astrads-astrads-system-admin-role" deleted
+role.rbac.authorization.k8s.io "astrads-astrads-system-reader-role" deleted
+role.rbac.authorization.k8s.io "astrads-astrads-system-writer-role" deleted
+role.rbac.authorization.k8s.io "astrads-leader-election-role" deleted
+role.rbac.authorization.k8s.io "astrads-manager-role" deleted
+clusterrole.rbac.authorization.k8s.io "astrads-astrads-admin-clusterrole" deleted
+clusterrole.rbac.authorization.k8s.io "astrads-astrads-reader-clusterrole" deleted
+clusterrole.rbac.authorization.k8s.io "astrads-astrads-writer-clusterrole" deleted
+clusterrole.rbac.authorization.k8s.io "astrads-astradsautosupport-editor-role" deleted
+clusterrole.rbac.authorization.k8s.io "astrads-astradsautosupport-viewer-role" deleted
+clusterrole.rbac.authorization.k8s.io "astrads-astradscloudsnapshot-editor-role" deleted
+clusterrole.rbac.authorization.k8s.io "astrads-astradscloudsnapshot-viewer-role" deleted
+clusterrole.rbac.authorization.k8s.io "astrads-astradscluster-editor-role" deleted
+clusterrole.rbac.authorization.k8s.io "astrads-astradscluster-viewer-role" deleted
+clusterrole.rbac.authorization.k8s.io "astrads-astradsexportpolicy-editor-role" deleted
+clusterrole.rbac.authorization.k8s.io "astrads-astradsexportpolicy-viewer-role" deleted
+clusterrole.rbac.authorization.k8s.io "astrads-astradsfaileddrive-editor-role" deleted
+clusterrole.rbac.authorization.k8s.io "astrads-astradsfaileddrive-viewer-role" deleted
+clusterrole.rbac.authorization.k8s.io "astrads-astradslicense-editor-role" deleted
+clusterrole.rbac.authorization.k8s.io "astrads-astradslicense-viewer-role" deleted
+clusterrole.rbac.authorization.k8s.io "astrads-astradsnfsoption-editor-role" deleted
+clusterrole.rbac.authorization.k8s.io "astrads-astradsnfsoption-viewer-role" deleted
+clusterrole.rbac.authorization.k8s.io "astrads-astradsnodeinfo-editor-role" deleted
+clusterrole.rbac.authorization.k8s.io "astrads-astradsnodeinfo-viewer-role" deleted
+clusterrole.rbac.authorization.k8s.io "astrads-astradsnodemanagement-editor-role" deleted
+clusterrole.rbac.authorization.k8s.io "astrads-astradsnodemanagement-viewer-role" deleted
+clusterrole.rbac.authorization.k8s.io "astrads-astradsqospolicy-viewer-role" deleted
+clusterrole.rbac.authorization.k8s.io "astrads-astradsversion-editor-role" deleted
+clusterrole.rbac.authorization.k8s.io "astrads-astradsversion-viewer-role" deleted
+clusterrole.rbac.authorization.k8s.io "astrads-astradsvolume-editor-role" deleted
+clusterrole.rbac.authorization.k8s.io "astrads-astradsvolume-viewer-role" deleted
+clusterrole.rbac.authorization.k8s.io "astrads-astradsvolumefile-editor-role" deleted
+clusterrole.rbac.authorization.k8s.io "astrads-astradsvolumefile-viewer-role" deleted
+clusterrole.rbac.authorization.k8s.io "astrads-astradsvolumesnapshot-editor-role" deleted
+clusterrole.rbac.authorization.k8s.io "astrads-astradsvolumesnapshot-viewer-role" deleted
+clusterrole.rbac.authorization.k8s.io "astrads-manager-role" deleted
+rolebinding.rbac.authorization.k8s.io "astrads-astrads-admin-rolebinding" deleted
+rolebinding.rbac.authorization.k8s.io "astrads-astrads-reader-rolebinding" deleted
+rolebinding.rbac.authorization.k8s.io "astrads-astrads-writer-rolebinding" deleted
+rolebinding.rbac.authorization.k8s.io "astrads-leader-election-rolebinding" deleted
+rolebinding.rbac.authorization.k8s.io "astrads-manager-rolebinding" deleted
+clusterrolebinding.rbac.authorization.k8s.io "astrads-astrads-admin-rolebinding" deleted
+clusterrolebinding.rbac.authorization.k8s.io "astrads-astrads-reader-rolebinding" deleted
+clusterrolebinding.rbac.authorization.k8s.io "astrads-astrads-writer-rolebinding" deleted
+clusterrolebinding.rbac.authorization.k8s.io "astrads-manager-rolebinding" deleted
+configmap "astrads-autosupport-cm" deleted
+configmap "astrads-firetap-cm" deleted
+configmap "astrads-kevents-asup" deleted
+configmap "astrads-metrics-cm" deleted
+secret "astrads-autosupport-certs" deleted
++----------------------------------------------------+
+| Wed Feb  2 10:16:36 EST 2022                       |
+| ADS system uninstall done                          |
++----------------------------------------------------+
+----
+
+
+
+
+== astrs-system 名前空間の削除を検証します
+
+次のコマンドで結果が返されないことを確認します。
+
+[listing]
+----
+kubectl get ns | grep astrads-system
+----
+
+
+== ワーカーノードでコンテナが実行されていないことを確認します
+
+'FIRETAAP' や 'netwd' などのコンテナがワーカー・ノードで実行されていないことを確認します各ノードで次のコマンドを実行します。
+
+[listing]
+----
+ssh <mynode1>
+# runc list
+----
+
+
+== OpenShift Container Platform リソースを削除します
+
+Red Hat OpenShift Container Platform （ OCP ）に Astra Data Store preview をインストールした場合は、 OCP セキュリティコンテキスト制約（ SCC ）と役割バインディングリソースをアンインストールできます。
+
+OpenShift では、セキュリティコンテキスト制約（ SCC ）を使用して、ポッドで実行できるアクションを制御します。
+
+標準のアンインストールプロセスが完了したら、次の手順を実行します。
+
+. SCC リソースを削除します。
++
+[listing]
+----
+oc delete -f ads_privileged_scc.yaml
+----
+. ロールバインドリソースを削除します
++
+[listing]
+----
+oc delete -f oc_role_bindings.yaml
+----
++
+
+NOTE: これらの手順で「 resources not found 」エラーを無視します。 
+
+. すべての Kubernetes ノードから /var/lib/kubebelet/config.yaml を削除します 
+
+
+
+
+== Astra データストアプレビューアンインストールプロセスのトラブルシューティングを行う
+
+Kubernetes v1.20 の Astra データストアプレビューアンインストールプロセスでは、原因 ポッドが終了状態のまま残ることがあります。
+
+この問題 が発生した場合は、次のコマンドを実行して、 'astrs-system' 名前空間内のすべてのポッドを強制的に削除します。
+
+[listing]
+----
+kubectl delete pods --all  -n astrads-system   --force --grace-period 0
+----

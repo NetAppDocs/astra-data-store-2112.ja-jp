@@ -1,0 +1,502 @@
+---
+sidebar: sidebar 
+permalink: get-started/setup-ads.html 
+keywords: astra, astra data store, setup, trident, backend 
+summary: Astra データストアをインストールし、環境に関する前提条件をいくつか取り上げたら、 Astra Trident のインストールまたは更新、 Kubernetes のスナップショット機能の設定、ストレージバックエンドのセットアップ、およびデフォルトのストレージクラスの作成を行います。 
+---
+= Astra Data Store のプレビューコンポーネントをセットアップする
+:hardbreaks:
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/get-started/
+
+
+Astra Data Store のプレビューをインストールし、環境に関するいくつかの前提条件に対処したら、 Astra Trident をインストールし、 Kubernetes のスナップショット機能を設定し、ストレージバックエンドをセットアップして、デフォルトのストレージクラスを作成します。
+
+* <<Install Astra Trident>>
+* <<Install Kubernetes snapshot CRDs and Controller>>
+* <<Set up Astra Data Store as storage backend>>
+* <<Create a default Astra Data Store storage class>>
+
+
+
+
+== Astra Trident をインストール
+
+Astra データストアプレビュー版を利用するには、 Astra Trident 21.10.1 をインストールする必要があります。Trident は次のいずれかの方法でインストールできます。
+
+* https://docs.netapp.com/us-en/trident/trident-get-started/kubernetes-deploy-tridentctl.html["tridentctl を使用して Astra Trident をインストールします"^]。
+* https://docs.netapp.com/us-en/trident/trident-get-started/kubernetes-deploy-operator.html["Trident オペレータを使用して Astra Trident をインストール"^]。
++
+
+NOTE: Trident オペレータは、手動または Helm を使用して導入できます。
+
+
+
+
+
+== Kubernetes スナップショットの CRD とコントローラをインストールします
+
+永続的ボリューム要求（ PVC ）の Snapshot を作成するには、 Kubernetes の Snapshot SSD とコントローラが必要です。環境に CRD とコントローラがインストールされていない場合は、次のコマンドを実行してインストールします。
+
+
+NOTE: 次のコマンド例では ' ディレクトリとして /trident` を想定していますが ' 使用するディレクトリは 'YAML ファイルのダウンロードに使用した任意のディレクトリにすることができます
+
+.必要なもの
+* link:requirements.html["インストールを開始する前に、 Astra データストアプレビュー環境を準備します"]。
+* をダウンロードします link:https://github.com/kubernetes-csi/external-snapshotter/tree/master/deploy/kubernetes/snapshot-controller["Kubernetes snapshot controller yaml ファイル"^]：
++
+** setup-snapshot-controller.yaml
+** rbac -snapshot-controller.yaml
+
+
+* をダウンロードします link:https://github.com/kubernetes-csi/external-snapshotter/tree/master/client/config/crd["YAML CRD"^]：
++
+** snapshot.storage.k8es.io_volumesnapshotclasses.yaml
+** snapshot.storage.k8es.io_volumesnapshotcontentes.yaml
+** snapshot.storage.k8es.io_volumesnapshots.yaml
+
+
+
+
+.手順
+. snapshot.storage.k8es.io_volumesnapshotclasses.yaml を適用します。
++
+[listing]
+----
+kubectl apply -f trident/snapshot.storage.k8s.io_volumesnapshotclasses.yaml
+----
++
+対応：
+
++
+[listing]
+----
+customresourcedefinition.apiextensions.k8s.io/volumesnapshotclasses.snapshot.storage.k8s.io configured
+----
+. snapshot.storage.k8es.io_volumesnapshotcontentes.yaml を適用します。
++
+[listing]
+----
+kubectl apply -f trident/snapshot.storage.k8s.io_volumesnapshotcontents.yaml
+----
++
+対応：
+
++
+[listing]
+----
+customresourcedefinition.apiextensions.k8s.io/volumesnapshotcontents.snapshot.storage.k8s.io configured
+----
+. snapshot.storage.k8es.io_volumesnapshotes.yaml を適用します。
++
+[listing]
+----
+kubectl apply -f trident/snapshot.storage.k8s.io_volumesnapshots.yaml
+----
++
+対応：
+
++
+[listing]
+----
+customresourcedefinition.apiextensions.k8s.io/volumesnapshots.snapshot.storage.k8s.io configured
+----
+. setup-snapshot-controller.yaml を適用します。
++
+[listing]
+----
+kubectl apply -f trident/setup-snapshot-controller.yaml
+----
++
+対応：
+
++
+[listing]
+----
+deployment.apps/snapshot-controller configured
+----
+. RBAC の -snapshot-controller.yaml を適用します。
++
+[listing]
+----
+kubectl apply -f trident/rbac-snapshot-controller.yaml
+----
++
+対応：
+
++
+[listing]
+----
+serviceaccount/snapshot-controller configured
+clusterrole.rbac.authorization.k8s.io/snapshot-controller-runner configured
+clusterrolebinding.rbac.authorization.k8s.io/snapshot-controller-role configured
+role.rbac.authorization.k8s.io/snapshot-controller-leaderelection configured
+rolebinding.rbac.authorization.k8s.io/snapshot-controller-leaderelection configured
+----
+. CRD YAML ファイルが適用されていることを確認します。
++
+[listing]
+----
+kubectl get crd | grep volumesnapshot
+----
++
+回答例：
+
++
+[listing]
+----
+astradsvolumesnapshots.astrads.netapp.io              2021-08-04T17:48:21Z
+volumesnapshotclasses.snapshot.storage.k8s.io         2021-08-04T22:05:49Z
+volumesnapshotcontents.snapshot.storage.k8s.io        2021-08-04T22:05:59Z
+volumesnapshots.snapshot.storage.k8s.io               2021-08-04T22:06:17Z
+----
+. Snapshot コントローラファイルが適用されたことを確認します。
++
+[listing]
+----
+kubectl get pods -n kube-system | grep snapshot
+----
++
+回答例：
+
++
+[listing]
+----
+snapshot-controller-7f58886ff4-cdh78                                    1/1     Running   0          13s
+snapshot-controller-7f58886ff4-tmrd9                                    1/1     Running   0          32s
+----
+
+
+
+
+== Astra データストアをストレージバックエンドとしてセットアップする
+
+ads_backend.json ファイルにストレージバックエンドパラメータを設定し、 Astra データストアストレージバックエンドを作成する。
+
+.手順
+. 安全な端末を使用して「 ads_backend.json 」を作成します。
++
+[listing]
+----
+vi ads_backend.json
+----
+. JSON ファイルを設定します。
++
+.. 「 cluster 」の値を Astra Data Store クラスタのクラスタ名に変更します。
+.. 「 namespace 」の値を、ボリュームの作成に使用するネームスペースに変更します。
+.. バックエンドではなく 'exportpolicy-CR を設定している場合を除き 'autoExportPolicy' の値を true に変更します
+.. 「 autoExportCIDRs 」リストに、アクセスを許可する IP アドレスを入力します。すべてを許可するには '0.0.0.0/0` を使用します
+.. 「 kubeconfig 」の値については、次の手順を実行します。
++
+... .kube/config YAML ファイルをスペースなしの JSON 形式に変換して最小化します。
++
+変換例：
+
++
+[listing]
+----
+python3 -c 'import sys, yaml, json; json.dump(yaml.load(sys.stdin), sys.stdout, indent=None)' < ~/.kube/config > kubeconf.json
+----
+... base64 としてエンコードし、 base64 出力を「 kubeconfig 」値に使用します。
++
+エンコーディングの例：
+
++
+[listing]
+----
+cat kubeconf.json | base64 | tr -d '\n'
+----
+
+
+
+
++
+[listing, subs="+quotes"]
+----
+{
+    "version": 1,
+    "storageDriverName": "astrads-nas",
+    "storagePrefix": "",
+    *"cluster": "example-1234584",*
+    *"namespace": "astrads-system",*
+    *"autoExportPolicy": true,*
+    *"autoExportCIDRs": ["0.0.0.0/0"],*
+    *"kubeconfig": "<base64_output_of_kubeconf_json>",*
+    "debugTraceFlags": {"method": true, "api": true},
+    "labels": {"cloud": "on-prem", "creator": "trident-dev"},
+    "defaults": {
+        "qosPolicy": "bronze"
+    },
+    "storage": [
+        {
+            "labels": {
+                "performance": "extreme"
+            },
+            "defaults": {
+                "qosPolicy": "bronze"
+            }
+        },
+        {
+            "labels": {
+                "performance": "premium"
+            },
+            "defaults": {
+                "qosPolicy": "bronze"
+            }
+        },
+        {
+            "labels": {
+                "performance": "standard"
+            },
+            "defaults": {
+                "qosPolicy": "bronze"
+            }
+        }
+    ]
+}
+----
+. Trident インストーラをダウンロードしたディレクトリに移動します。
++
+[listing]
+----
+cd <trident-installer or path to folder containing tridentctl>
+----
+. ストレージバックエンドを作成します。
++
+[listing]
+----
+./tridentctl create backend -f ads_backend.json -n trident
+----
++
+回答例：
+
++
+[listing]
+----
++------------------+----------------+--------------------------------------+--------+---------+
+|       NAME       | STORAGE DRIVER |                 UUID                 | STATE  | VOLUMES |
++------------------+----------------+--------------------------------------+--------+---------+
+| example-1234584  | astrads-nas    | 2125fa7a-730e-43c8-873b-6012fcc3b527 | online |       0 |
++------------------+----------------+--------------------------------------+--------+---------+
+----
+
+
+
+
+== Default Astra Data Store ストレージクラスを作成
+
+Astra Trident のデフォルトのストレージクラスを作成し、ストレージバックエンドに適用
+
+.手順
+. trident-csi ストレージクラスを作成します。
++
+.. ads _sc_example.yaml を作成します：
++
+[listing]
+----
+vi ads_sc_example.yaml
+----
++
+例
+
++
+[listing]
+----
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: trident-csi
+provisioner: csi.trident.netapp.io
+reclaimPolicy: Delete
+volumeBindingMode: Immediate
+allowVolumeExpansion: true
+mountOptions:
+  - vers=4.1
+----
+.. trident-csi の作成：
++
+[listing]
+----
+kubectl create -f ads_sc_example.yaml
+----
++
+対応：
+
++
+[listing]
+----
+storageclass.storage.k8s.io/trident-csi created
+----
+
+
+. ストレージクラスが追加されたことを確認します。
++
+[listing]
+----
+kubectl get storageclass -A
+----
++
+対応：
+
++
+[listing]
+----
+NAME          PROVISIONER             RECLAIMPOLICY   VOLUMEBINDINGMODE   ALLOWVOLUMEEXPANSION   AGE
+trident-csi   csi.trident.netapp.io   Delete          Immediate           true                   6h29m
+----
+. Trident インストーラをダウンロードしたディレクトリに移動します。
++
+[listing]
+----
+cd <trident-installer or path to folder containing tridentctl>
+----
+. Astra Trident バックエンドがデフォルトのストレージクラスパラメータで更新されたことを確認します。
++
+[listing]
+----
+./tridentctl get backend -n trident -o yaml
+----
++
+回答例：
+
++
+[listing, subs="+quotes"]
+----
+items:
+- backendUUID: 2125fa7a-730e-43c8-873b-6012fcc3b527
+  config:
+    autoExportCIDRs:
+    - 0.0.0.0/0
+    autoExportPolicy: true
+    backendName: ""
+    cluster: example-1234584
+    credentials: null
+    debug: false
+    debugTraceFlags:
+      api: true
+      method: true
+    defaults:
+      exportPolicy: default
+      qosPolicy: bronze
+      size: 1G
+      snapshotDir: "false"
+      snapshotPolicy: none
+    disableDelete: false
+    kubeconfig: <ID>
+    labels:
+      cloud: on-prem
+      creator: trident-dev
+    limitVolumeSize: ""
+    namespace: astrads-system
+    nfsMountOptions: ""
+    region: ""
+    serialNumbers: null
+    storage:
+    - defaults:
+        exportPolicy: ""
+        qosPolicy: bronze
+        size: ""
+        snapshotDir: ""
+        snapshotPolicy: ""
+      labels:
+        performance: extreme
+      region: ""
+      supportedTopologies: null
+      zone: ""
+    - defaults:
+        exportPolicy: ""
+        qosPolicy: bronze
+        size: ""
+        snapshotDir: ""
+        snapshotPolicy: ""
+      labels:
+        performance: premium
+      region: ""
+      supportedTopologies: null
+      zone: ""
+    - defaults:
+        exportPolicy: ""
+        qosPolicy: bronze
+        size: ""
+        snapshotDir: ""
+        snapshotPolicy: ""
+      labels:
+        performance: standard
+      region: ""
+      supportedTopologies: null
+      zone: ""
+    storageDriverName: astrads-nas
+    storagePrefix: ""
+    supportedTopologies: null
+    version: 1
+    zone: ""
+  configRef: ""
+  name: example-1234584
+  online: true
+  protocol: file
+  state: online
+  storage:
+    example-1234584_pool_0:
+      name: example-1234584_pool_0
+      storageAttributes:
+        backendType:
+          offer:
+          - astrads-nas
+        clones:
+          offer: true
+        encryption:
+          offer: false
+        labels:
+          offer:
+            cloud: on-prem
+            creator: trident-dev
+            performance: extreme
+        snapshots:
+          offer: true
+      storageClasses:
+      - trident-csi
+      supportedTopologies: null
+    example-1234584_pool_1:
+      name: example-1234584_pool_1
+      storageAttributes:
+        backendType:
+          offer:
+          - astrads-nas
+        clones:
+          offer: true
+        encryption:
+          offer: false
+        labels:
+          offer:
+            cloud: on-prem
+            creator: trident-dev
+            performance: premium
+        snapshots:
+          offer: true
+      storageClasses:
+      - trident-csi
+      supportedTopologies: null
+    example-1234584_pool_2:
+      name: example-1234584_pool_2
+      storageAttributes:
+        backendType:
+          offer:
+          - astrads-nas
+        clones:
+          offer: true
+        encryption:
+          offer: false
+        labels:
+          offer:
+            cloud: on-prem
+            creator: trident-dev
+            performance: standard
+        snapshots:
+          offer: true
+      storageClasses:
+      *- trident-csi*
+      supportedTopologies: null
+  volumes: []
+----
+
