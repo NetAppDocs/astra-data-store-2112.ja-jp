@@ -13,7 +13,7 @@ summary: 環境に関するいくつかの前提条件に対処した後に Astr
 
 Astra データストアプレビューをインストールするには、からインストールバンドルをダウンロードします https://mysupport.netapp.com/site/products/all/details/astra-data-store/downloads-tab["ネットアップサポートサイト"^] およびこの手順 に記載されているインストール手順を実行します。
 
-video::jz6EuryqYps[youtube, ]
+video::jz6EuryqYps[youtube]
 .必要なもの
 * link:requirements.html["インストールを開始する前に、 Astra データストアプレビュー環境を準備します"]。
 * にアクセスします https://mysupport.netapp.com/site/products/all/details/astra-data-store/downloads-tab["ネットアップサポートサイト"^]。 https://www.netapp.com/cloud-services/astra/data-store-form/["登録"^] フルアクセスのネットアップサポートサイトアカウントをまだお持ちでない場合は、プレビュー版をお持ちください。
